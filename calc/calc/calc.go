@@ -1,43 +1,43 @@
 package calc
 
 import (
+	"container/list"
+	"errors"
 	"log"
 	"strconv"
 	"strings"
 )
 
 type Stack struct {
-	data []interface{}
+	data *list.List
 }
 
 func NewStack() *Stack {
-	return &Stack{data: make([]interface{}, 0)}
+	return &Stack{data: list.New()}
 }
 
 func (stack *Stack) Push(value interface{}) {
-	stack.data = append(stack.data, value)
+	stack.data.PushBack(value)
 }
 
-func (stack *Stack) Peek() (value interface{}) {
+func (stack *Stack) Peek() interface{} {
 	if stack.IsEmpty() {
 		log.Fatal("stack underflow")
 	}
 
-	value = stack.data[stack.Len()-1]
-
-	return
+	return stack.data.Back().Value
 }
 
 func (stack *Stack) Pop() interface{} {
 	defer func() {
-		stack.data = stack.data[:len(stack.data)-1]
+		stack.data.Remove(stack.data.Back())
 	}()
 
 	return stack.Peek()
 }
 
 func (stack *Stack) Len() int {
-	return len(stack.data)
+	return stack.data.Len()
 }
 
 func (stack *Stack) IsEmpty() bool {
@@ -53,15 +53,13 @@ func isOper(symbol byte) bool {
 	return strings.Contains("+-*/()", string(symbol))
 }
 
-func handleError(err error) {
-	if err != nil && err.Error() != "" {
-		panic(err)
-	}
-}
-
-func splitToTokens(expr string) []token {
+func splitToTokens(expr string) ([]token, error) {
 	expr = strings.ReplaceAll(expr, " ", "")
 	tokens := make([]token, 0)
+
+	handle := func(err error) ([]token, error) {
+		return nil, errors.New("error while parsing expression")
+	}
 
 	start := 0
 	end := 0
@@ -70,7 +68,9 @@ func splitToTokens(expr string) []token {
 		if isOper(expr[i]) {
 			if start != end {
 				num, err := strconv.ParseFloat(expr[start:end], 64)
-				handleError(err)
+				if err != nil {
+					handle(err)
+				}
 
 				tokens = append(tokens, token{Value: num, IsNum: true})
 			}
@@ -84,12 +84,15 @@ func splitToTokens(expr string) []token {
 
 	if start != end {
 		num, err := strconv.ParseFloat(expr[start:end], 64)
-		handleError(err)
+
+		if err != nil {
+			handle(err)
+		}
 
 		tokens = append(tokens, token{Value: num, IsNum: true})
 	}
 
-	return tokens
+	return tokens, nil
 }
 
 func processOper(nums, opers *Stack) {
@@ -113,8 +116,13 @@ func processOper(nums, opers *Stack) {
 	nums.Push(resNum)
 }
 
-func Calculate(expr string) float64 {
-	tokens := splitToTokens(expr)
+func Calculate(expr string) (float64, error) {
+	tokens, err := splitToTokens(expr)
+
+	if err != nil {
+		return 0, err
+	}
+
 	opers := NewStack()
 	nums := NewStack()
 
@@ -168,5 +176,5 @@ func Calculate(expr string) float64 {
 	}
 	resNum := nums.Pop().(float64)
 
-	return resNum
+	return resNum, nil
 }
