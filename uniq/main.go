@@ -18,25 +18,33 @@ func handleError(err error) {
 	}
 }
 
-func getOptions() (*uniq.RunOptions, string, string) {
+func getOptions() (uniq.RunOptions, string, string) {
+	c := flag.Bool("c", false, "prefix lines by the number of occurrences")
+	d := flag.Bool("d", false, "only print duplicate lines, one for each group")
+	u := flag.Bool("u", false, "only print unique lines")
+	f := flag.Int("f", 0, "avoid comparing the first N fields")
+	s := flag.Int("s", 0, "avoid comparing the first N characters")
+	i := flag.Bool("i", false, "ignore differences in case when comparing")
+	flag.Parse()
+
 	options := uniq.RunOptions{
-		Count:      flag.Bool("c", false, "prefix lines by the number of occurrences"),
-		Duplicates: flag.Bool("d", false, "only print duplicate lines, one for each group"),
-		Unique:     flag.Bool("u", false, "only print unique lines"),
-		SkipFields: flag.Int("f", 0, "avoid comparing the first N fields"),
-		SkipChars:  flag.Int("s", 0, "avoid comparing the first N characters"),
-		IgnoreCase: flag.Bool("i", false, "ignore differences in case when comparing"),
+		Count:      *c,
+		Duplicates: *d,
+		Unique:     *u,
+		SkipFields: *f,
+		SkipChars:  *s,
+		IgnoreCase: *i,
 	}
 
 	flag.Parse()
 
-	if *options.Count && (*options.Duplicates || *options.Unique) {
+	if options.Count && (options.Duplicates || options.Unique) {
 		fmt.Println("You should use only one of following options: -c -d -u\nAvaliable options:")
 		flag.PrintDefaults()
 		handleError(errors.New("error while parsing agrs"))
 	}
 
-	return &options, flag.Arg(0), flag.Arg(1)
+	return options, flag.Arg(0), flag.Arg(1)
 }
 
 func readFile(fname string) string {
@@ -98,7 +106,7 @@ func main() {
 
 	stringData := readFile(fin)
 
-	resultLines := uniq.Uniq(strings.Split(stringData, "\n"), *options)
+	resultLines := uniq.Uniq(strings.Split(stringData, "\n"), options)
 
 	writeFile(fout, strings.Join(resultLines, "\n"))
 }

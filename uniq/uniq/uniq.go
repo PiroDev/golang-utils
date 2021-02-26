@@ -6,29 +6,29 @@ import (
 )
 
 type RunOptions struct {
-	Count      *bool
-	Duplicates *bool
-	Unique     *bool
-	SkipFields *int
-	SkipChars  *int
-	IgnoreCase *bool
+	Count      bool
+	Duplicates bool
+	Unique     bool
+	SkipFields int
+	SkipChars  int
+	IgnoreCase bool
 }
 
 func getModifiedLine(line string, options RunOptions) string {
-	if *options.IgnoreCase {
+	if options.IgnoreCase {
 		line = strings.ToUpper(line)
 	}
 
-	if *options.SkipChars > 0 {
-		if len(line) >= *options.SkipChars {
-			line = line[*options.SkipChars:]
+	if options.SkipChars > 0 {
+		if len(line) >= options.SkipChars {
+			line = line[options.SkipChars:]
 		}
 	}
 
-	if *options.SkipFields > 0 {
+	if options.SkipFields > 0 {
 		splited := strings.Split(line, " ")
 		if len(splited) > 1 {
-			line = strings.Join(splited[*options.SkipFields:], " ")
+			line = strings.Join(splited[options.SkipFields:], " ")
 		}
 	}
 
@@ -52,7 +52,7 @@ func Uniq(lines []string, options RunOptions) []string {
 
 	resultLines := make([]string, 0)
 
-	if *options.Count {
+	if options.Count {
 		for _, pos := range linesPositions {
 			line := lines[pos]
 
@@ -60,13 +60,13 @@ func Uniq(lines []string, options RunOptions) []string {
 				resultLines = append(resultLines, fmt.Sprint(count)+" "+line)
 			}
 		}
-	} else if *options.Duplicates {
+	} else if options.Duplicates {
 		for _, pos := range linesPositions {
 			if line := lines[pos]; len(linesMap[getModifiedLine(line, options)]) > 1 {
 				resultLines = append(resultLines, line)
 			}
 		}
-	} else if *options.Unique {
+	} else if options.Unique {
 		for _, pos := range linesPositions {
 			if line := lines[pos]; len(linesMap[getModifiedLine(line, options)]) == 1 {
 				resultLines = append(resultLines, line)

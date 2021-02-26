@@ -7,12 +7,12 @@ import (
 
 func newRunOptions(c, d, u, i bool, f, s int) RunOptions {
 	return RunOptions{
-		Count:      &c,
-		Duplicates: &d,
-		Unique:     &u,
-		SkipFields: &f,
-		SkipChars:  &s,
-		IgnoreCase: &i,
+		Count:      c,
+		Duplicates: d,
+		Unique:     u,
+		SkipFields: f,
+		SkipChars:  s,
+		IgnoreCase: i,
 	}
 }
 
