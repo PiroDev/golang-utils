@@ -1,22 +1,16 @@
 package main
 
 import (
-	"errors"
 	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"os"
 	"strings"
 
 	"./uniq"
 )
-
-func handleError(err error) {
-	if err != nil && err.Error() != "" {
-		panic(err)
-	}
-}
 
 func getOptions() (uniq.RunOptions, string, string) {
 	c := flag.Bool("c", false, "prefix lines by the number of occurrences")
@@ -41,15 +35,19 @@ func getOptions() (uniq.RunOptions, string, string) {
 	if options.Count && (options.Duplicates || options.Unique) {
 		fmt.Println("You should use only one of following options: -c -d -u\nAvaliable options:")
 		flag.PrintDefaults()
-		handleError(errors.New("error while parsing agrs"))
+		log.Fatal("error while parsing agrs")
 	}
 
 	return options, flag.Arg(0), flag.Arg(1)
 }
 
-func readFile(fname string) string {
+func readFile(fname string) (string, error) {
 	var file *os.File
 	var err error
+
+	handle := func(err error) (string, error) {
+		return "", err
+	}
 
 	if fname == os.Stdin.Name() {
 		file = os.Stdin
@@ -57,21 +55,25 @@ func readFile(fname string) string {
 		file, err = os.Open(fname)
 	}
 
-	handleError(err)
+	if err != nil {
+		return handle(err)
+	}
 
 	reader := io.Reader(file)
 	data, err := ioutil.ReadAll(reader)
 
-	handleError(err)
+	if err != nil {
+		return handle(err)
+	}
 
 	if file != os.Stdin {
 		file.Close()
 	}
 
-	return string(data)
+	return string(data), nil
 }
 
-func writeFile(fname, stringData string) {
+func writeFile(fname, stringData string) error {
 	var file *os.File
 	var err error
 
@@ -81,16 +83,22 @@ func writeFile(fname, stringData string) {
 		file, err = os.OpenFile(fname, os.O_RDWR|os.O_CREATE, 0755)
 	}
 
-	handleError(err)
+	if err != nil {
+		return err
+	}
 
 	writer := io.Writer(file)
 	_, err = writer.Write([]byte(stringData))
 
-	handleError(err)
+	if err != nil {
+		return err
+	}
 
 	if file != os.Stdout {
 		file.Close()
 	}
+
+	return nil
 }
 
 func main() {
@@ -104,9 +112,17 @@ func main() {
 		fout = os.Stdout.Name()
 	}
 
-	stringData := readFile(fin)
+	stringData, err := readFile(fin)
+
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	resultLines := uniq.Uniq(strings.Split(stringData, "\n"), options)
 
-	writeFile(fout, strings.Join(resultLines, "\n"))
+	err = writeFile(fout, strings.Join(resultLines, "\n"))
+
+	if err != nil {
+		log.Fatal(err)
+	}
 }
