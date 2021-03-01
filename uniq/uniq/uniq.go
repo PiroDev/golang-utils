@@ -52,7 +52,8 @@ func Uniq(lines []string, options RunOptions) []string {
 
 	resultLines := make([]string, 0)
 
-	if options.Count {
+	switch {
+	case options.Count:
 		for _, pos := range linesPositions {
 			line := lines[pos]
 
@@ -60,19 +61,19 @@ func Uniq(lines []string, options RunOptions) []string {
 				resultLines = append(resultLines, fmt.Sprint(count)+" "+line)
 			}
 		}
-	} else if options.Duplicates {
+	case options.Duplicates:
 		for _, pos := range linesPositions {
 			if line := lines[pos]; len(linesMap[getModifiedLine(line, options)]) > 1 {
 				resultLines = append(resultLines, line)
 			}
 		}
-	} else if options.Unique {
+	case options.Unique:
 		for _, pos := range linesPositions {
 			if line := lines[pos]; len(linesMap[getModifiedLine(line, options)]) == 1 {
 				resultLines = append(resultLines, line)
 			}
 		}
-	} else {
+	default:
 		for _, pos := range linesPositions {
 			resultLines = append(resultLines, lines[pos])
 		}
