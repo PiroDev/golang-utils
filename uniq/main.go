@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -12,7 +13,7 @@ import (
 	"./uniq"
 )
 
-func getOptions() (uniq.RunOptions, string, string) {
+func getOptions() (uniq.RunOptions, string, string, error) {
 	c := flag.Bool("c", false, "prefix lines by the number of occurrences")
 	d := flag.Bool("d", false, "only print duplicate lines, one for each group")
 	u := flag.Bool("u", false, "only print unique lines")
@@ -32,13 +33,15 @@ func getOptions() (uniq.RunOptions, string, string) {
 
 	flag.Parse()
 
+	var err error
+
 	if options.Count && (options.Duplicates || options.Unique) {
 		fmt.Println("You should use only one of following options: -c -d -u\nAvaliable options:")
 		flag.PrintDefaults()
-		log.Fatal("error while parsing agrs")
+		err = errors.New("error while parsing agrs")
 	}
 
-	return options, flag.Arg(0), flag.Arg(1)
+	return options, flag.Arg(0), flag.Arg(1), err
 }
 
 func readFile(fname string) (string, error) {
@@ -102,7 +105,15 @@ func writeFile(fname, stringData string) error {
 }
 
 func main() {
-	options, fin, fout := getOptions()
+	checkAndHandleError := func(err error) {
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	options, fin, fout, err := getOptions()
+
+	checkAndHandleError(err)
 
 	if fin == "" {
 		fin = os.Stdin.Name()
@@ -114,15 +125,11 @@ func main() {
 
 	stringData, err := readFile(fin)
 
-	if err != nil {
-		log.Fatal(err)
-	}
+	checkAndHandleError(err)
 
 	resultLines := uniq.Uniq(strings.Split(stringData, "\n"), options)
 
 	err = writeFile(fout, strings.Join(resultLines, "\n"))
 
-	if err != nil {
-		log.Fatal(err)
-	}
+	checkAndHandleError(err)
 }
