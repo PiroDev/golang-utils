@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"os"
 	"strings"
 
@@ -33,24 +32,18 @@ func getOptions() (uniq.RunOptions, string, string, error) {
 
 	flag.Parse()
 
-	var err error
-
 	if options.Count && (options.Duplicates || options.Unique) {
 		fmt.Println("You should use only one of following options: -c -d -u\nAvaliable options:")
 		flag.PrintDefaults()
-		err = errors.New("error while parsing agrs")
+		return uniq.RunOptions{}, "", "", errors.New("error while parsing agrs")
 	}
 
-	return options, flag.Arg(0), flag.Arg(1), err
+	return options, flag.Arg(0), flag.Arg(1), nil
 }
 
 func readFile(fname string) (string, error) {
 	var file *os.File
 	var err error
-
-	handle := func(err error) (string, error) {
-		return "", err
-	}
 
 	if fname == os.Stdin.Name() {
 		file = os.Stdin
@@ -59,14 +52,14 @@ func readFile(fname string) (string, error) {
 	}
 
 	if err != nil {
-		return handle(err)
+		return "", err
 	}
 
 	reader := io.Reader(file)
 	data, err := ioutil.ReadAll(reader)
 
 	if err != nil {
-		return handle(err)
+		return "", err
 	}
 
 	if file != os.Stdin {
@@ -105,15 +98,12 @@ func writeFile(fname, stringData string) error {
 }
 
 func main() {
-	checkAndHandleError := func(err error) {
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
-
 	options, fin, fout, err := getOptions()
 
-	checkAndHandleError(err)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 
 	if fin == "" {
 		fin = os.Stdin.Name()
@@ -125,11 +115,17 @@ func main() {
 
 	stringData, err := readFile(fin)
 
-	checkAndHandleError(err)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 
 	resultLines := uniq.Uniq(strings.Split(stringData, "\n"), options)
 
 	err = writeFile(fout, strings.Join(resultLines, "\n"))
 
-	checkAndHandleError(err)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 }
